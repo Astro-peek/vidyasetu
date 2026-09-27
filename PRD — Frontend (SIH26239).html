@@ -1,0 +1,323 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}</style><style>:root{color-scheme:light dark;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}}:root[data-theme="dark"]{color-scheme:dark;--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}:root[data-theme="light"]{color-scheme:light}@media print{:root,:root[data-theme="dark"]{color-scheme:light;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}}body{background:var(--md-bg);color:var(--md-text);max-width:720px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:10px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;overflow-wrap:break-word}body>:first-child{margin-top:0}h1,h2,h3,h4,h5,h6{margin:6px 0 0;line-height:1.25;font-weight:600;text-wrap:balance}h1{font-size:1.35em}h2{font-size:1.15em;color:var(--md-muted)}h3,h4,h5,h6{font-size:1em}p,ul,ol,blockquote,table,pre,hr{margin:0}strong{font-weight:600}a{color:var(--md-link);text-decoration:none}a:hover{text-decoration:underline}ul,ol{display:flex;flex-direction:column;gap:6px;padding-left:22px}ul{list-style:disc}ol{list-style:decimal}:is(li,td,th)>*+:is(p,ul,ol,blockquote){margin-top:6px}blockquote{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--md-rule);padding-left:10px;color:var(--md-muted)}:not(pre)>code{background:var(--md-fill);padding:1px 3px;border-radius:4px;font:.92em 'SF Mono',ui-monospace,Menlo,Consolas,monospace}a>code{background:none;color:inherit}pre{background:var(--md-fill);padding:10px 12px;border-radius:6px;overflow-x:auto;font:12px/1.5 'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-block:4px}pre code{background:none;padding:0;font:inherit}table{width:100%;border-collapse:separate;border-spacing:2px;font:inherit}th,td{padding:6px 8px;border-radius:3px;text-align:left;vertical-align:top}th{background:var(--md-fill-strong);font-weight:600}td{background:var(--md-fill)}:is(th,td) :not(pre)>code{background:transparent}hr{border:0;border-top:1px solid var(--md-rule-strong);margin-block:10px}img{max-width:100%;height:auto;border-radius:4px}</style>
+</head><body>
+<h1>PRD — Frontend: Scholarship &amp; Fellowship Management System (SIH26239)</h1>
+<p><strong>Stack:</strong> React 18 + TypeScript, Vite, Supabase JS (auth only), REST client to the Express API
+<strong>Version:</strong> 1.0 (MVP) | <strong>Owner:</strong> Frontend workstream</p>
+<hr>
+<h2>1. Purpose &amp; Goals</h2>
+<p>A role-based web app where administrators <strong>configure schemes</strong>, applicants <strong>apply through forms generated from configuration</strong>, and officers/committees <strong>review applications with AI signals and rule results side by side</strong>.</p>
+<p><strong>Goals</strong></p>
+<ol>
+<li>Every scheme-specific screen (form, documents list, workflow actions) is <strong>rendered from backend configuration</strong>, not hardcoded.</li>
+<li>The scrutiny workspace shows document, extracted fields, AI flags, rule results and history in one view.</li>
+<li>AI output is always presented as <em>assistive</em> and overridable.</li>
+<li>A clear, credible end-to-end demo: Scheme A, then Scheme B, then a live third scheme.</li>
+</ol>
+<p><strong>Non-goals (MVP):</strong> native mobile app (SIH26238 covers student-facing mobile), offline mode, multilingual chatbot, public analytics site.</p>
+<hr>
+<h2>2. Tech Stack &amp; Decisions</h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Choice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Build / language</td>
+<td>Vite + React 18 + TypeScript</td>
+</tr>
+<tr>
+<td>Routing</td>
+<td>React Router v6 (route guards by role)</td>
+</tr>
+<tr>
+<td>Server state</td>
+<td>TanStack Query (caching, polling for AI job status)</td>
+</tr>
+<tr>
+<td>Forms / validation</td>
+<td>React Hook Form + Zod (schemas <strong>generated at runtime</strong> from scheme config)</td>
+</tr>
+<tr>
+<td>UI</td>
+<td>Tailwind CSS + shadcn/ui (Radix, accessible by default)</td>
+</tr>
+<tr>
+<td>Tables</td>
+<td>TanStack Table (server-side pagination/filter)</td>
+</tr>
+<tr>
+<td>Charts</td>
+<td>Recharts</td>
+</tr>
+<tr>
+<td>Workflow editor</td>
+<td>React Flow (<code>@xyflow/react</code>) for the visual state/transition editor</td>
+</tr>
+<tr>
+<td>Document viewing</td>
+<td><code>react-pdf</code> + image viewer with zoom/rotate</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td><code>@supabase/supabase-js</code> (sign-in, session); API calls send the JWT as a Bearer token</td>
+</tr>
+<tr>
+<td>Realtime</td>
+<td>Supabase Realtime for notifications / status (fallback: polling)</td>
+</tr>
+<tr>
+<td>i18n</td>
+<td><code>react-i18next</code>, <strong>English and Hindi both complete for the MVP</strong>; scheme labels come from config <code>label.{en,hi}</code>; Noto Sans Devanagari font</td>
+</tr>
+<tr>
+<td>Testing</td>
+<td>Vitest, React Testing Library, Playwright (demo flows)</td>
+</tr>
+</tbody>
+</table>
+<p>The Gemini key and the Supabase service-role key <strong>never</strong> exist in the frontend. Only the Supabase anon key and the API base URL are used (<code>VITE_*</code>).</p>
+<hr>
+<h2>3. Users &amp; Route Map</h2>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Routes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Public</td>
+<td><code>/login</code>, <code>/register</code>, <code>/forgot-password</code></td>
+</tr>
+<tr>
+<td>Applicant</td>
+<td><code>/apply</code> (scheme list), <code>/apply/:schemeId</code>, <code>/applications</code>, <code>/applications/:id</code> (status + deficiency response), <code>/applications/:id/award</code> (accept, joining, follow-ups), <code>/help</code> (grievances), <code>/notifications</code>, <code>/profile</code></td>
+</tr>
+<tr>
+<td>Scrutiny officer</td>
+<td><code>/scrutiny</code> (queue), <code>/scrutiny/:id</code> (workspace)</td>
+</tr>
+<tr>
+<td>Scheme admin</td>
+<td><code>/admin/schemes</code>, <code>/admin/schemes/:id/builder</code>, <code>/admin/applications</code>, <code>/admin/post-selection</code>, <code>/admin/grievances</code>, <code>/admin/reference-lists</code>, <code>/admin/reports</code></td>
+</tr>
+<tr>
+<td>Committee member</td>
+<td><code>/committee</code>, <code>/committee/:schemeId</code>, <code>/committee/review/:id</code></td>
+</tr>
+<tr>
+<td>Institution verifier</td>
+<td><code>/institution</code>, <code>/institution/:id</code> (confirm admission/joining)</td>
+</tr>
+<tr>
+<td>Finance officer</td>
+<td><code>/finance</code> (disbursement status entry)</td>
+</tr>
+<tr>
+<td>Ministry viewer</td>
+<td><code>/dashboard</code> (aggregates only)</td>
+</tr>
+<tr>
+<td>Super admin</td>
+<td><code>/admin/users</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Separate interfaces:</strong> the same React app ships two distinct shells: an <strong>Applicant Portal</strong> (simple, mobile-first) and a <strong>Staff/Admin Portal</strong> (dense, desktop-first), selected by role after login, matching the PS requirement for separate applicant and administrator interfaces.</p>
+<p>Guards: unauthenticated → <code>/login</code>; wrong role → 403 page. Post-login redirect based on role. Menus show only permitted items, and the backend remains the source of truth.</p>
+<hr>
+<h2>4. Screen Requirements</h2>
+<h3>4.1 Auth</h3>
+<ul>
+<li>Email + password (Supabase); email verification; password reset; session refresh handling; idle timeout warning.</li>
+<li>Applicant self-registration. Staff accounts are created by the admin (no public role selection).</li>
+</ul>
+<h3>4.2 Scheme Builder (Admin) — <em>core differentiator</em></h3>
+<p>A stepper/tabs editor bound to the config JSON (<code>draft</code> versions only):</p>
+<ol>
+<li><strong>Meta:</strong> name, code, source reference, effective dates.</li>
+<li><strong>Form designer:</strong> add sections and fields (text, number, date, select, radio, checkbox, textarea, file); set label (EN/HI), required, validation (min/max/regex), conditional visibility (<code>showIf</code>), drag-reorder.</li>
+<li><strong>Documents:</strong> type, mandatory/optional, formats, size, validity days.</li>
+<li><strong>Eligibility rules:</strong> visual builder for nested AND/OR groups (field, operator, value, source clause). Includes a <strong>rule tester</strong>: enter sample values and see rule-by-rule result.</li>
+<li><strong>Consistency checks:</strong> map form field to document-extracted field with match type.</li>
+<li><strong>Workflow (visual editor, required):</strong> React Flow canvas. Drag to add states, draw edges for transitions, click an edge to set allowed roles/conditions, click a node to set SLA, notifications and terminal/start flags. Node positions are saved into <code>workflow.layout</code>. Live validation panel (exactly one start state, no unreachable or dead-end non-terminal states, every transition has a role) mirrors the backend <code>/validate</code>. Templates: start from another scheme's workflow. Read-only view when published.</li>
+<li><strong>Selection &amp; post-selection:</strong> seats, quotas (e.g. PVTG sub-quota), preference boosts (e.g. girls/Divyangjan/PVTG), weighted criteria, committee and interview stages; post-selection follow-ups (joining report, progress report, renewal) with schedule and acceptance deadline.</li>
+<li><strong>Notifications:</strong> event → template → channel.</li>
+<li><strong>Review &amp; publish:</strong> JSON diff against the previous version, validation errors from <code>/validate</code>, submit for approval. Approver (different user) sees diff and approves/publishes.</li>
+</ol>
+<p>Requirements: live preview of the applicant form; unsaved-changes guard; autosave draft; read-only view for published versions; clone-to-new-version.</p>
+<h3>4.3 Applicant: Dynamic Application</h3>
+<ul>
+<li><code>GET /schemes/:id/form</code> returns the definition. The <code>&lt;DynamicForm&gt;</code> renderer builds fields, a Zod schema and conditional logic from it.</li>
+<li>Multi-step by section, autosave draft, progress indicator, per-field errors.</li>
+<li>Document step: one upload slot per configured requirement, with drag-drop, format/size checks client-side (server re-validates), preview, replace (versioning), and upload progress.</li>
+<li>After upload, show <strong>AI pre-check status</strong> (processing, ready, issues found) with plain-language hints (&quot;page appears cropped&quot;) so applicants can fix problems <em>before</em> submitting. These are suggestions, not verdicts.</li>
+<li>Review &amp; submit screen, and confirmation with application ID.</li>
+</ul>
+<h3>4.4 Applicant: Status &amp; Deficiency</h3>
+<ul>
+<li>Status timeline (from <code>/timeline</code>), current stage, and expected SLA where configured.</li>
+<li>Deficiency card: list of requested items, due date, targeted re-upload or field edit, submit response. Only the requested items are editable.</li>
+<li>Notification center (in-app) with unread badge.</li>
+</ul>
+<h3>4.5 Scrutiny Queue (Officer)</h3>
+<ul>
+<li>Server-side table: scheme, state, submitted date, SLA countdown/breach badge, AI flag count/severity, assignee.</li>
+<li>Filters: scheme, state, flag type, priority, deficiency status, &quot;assigned to me&quot;. Saved filters, bulk assign (admin).</li>
+</ul>
+<h3>4.6 Scrutiny Workspace (Officer) — <em>demo centrepiece</em></h3>
+<p>Three-pane layout:</p>
+<ul>
+<li><strong>Left:</strong> application data, and a documents list with status chips.</li>
+<li><strong>Centre:</strong> document viewer (zoom, rotate, page nav) with the <strong>extracted fields panel</strong> beside it: value, confidence bar, form-value comparison, mismatch highlighting, and edit/confirm with a mandatory reason on override.</li>
+<li><strong>Right tabs:</strong> <em>Rules</em> (rule-by-rule pass/fail with expected vs actual and source), <em>AI Flags</em> (evidence, confirm/dismiss), <em>History</em> (audit timeline).</li>
+<li><strong>Action bar:</strong> allowed transitions come from workflow config (Raise deficiency, Mark eligible, Mark ineligible, Forward). Each requires a reason. The deficiency composer has structured item pick-list plus remarks.</li>
+<li>Labels: &quot;AI-assisted&quot;, never &quot;verified/authentic&quot;. Low-confidence fields are visually flagged and require an officer's confirmation.</li>
+</ul>
+<h3>4.7 Committee Workspace</h3>
+<ul>
+<li>Ranked shortlist per scheme with score breakdown (from configured criteria), applicant summary, and document access.</li>
+<li>Record decision + remarks, and an override with reason when the decision differs from the rank. Final decisions are clearly human-attributed.</li>
+<li><strong>Interview stage</strong> (where configured): panel members enter scores/remarks per candidate, and the merit list recomputes from the configured weights. Quota and preference effects are shown transparently (why a candidate is ranked where they are).</li>
+</ul>
+<h3>4.8 Analytics Dashboard</h3>
+<p>Cards and charts: volume by scheme, stage funnel, average processing time, deficiency reasons, SLA breaches, AI flag counts. Aggregates only for ministry role, with no personal data. Date and scheme filters, and CSV export of aggregates.</p>
+<h3>4.9 Audit Timeline (shared component)</h3>
+<p>Vertical timeline: time, actor (user / system / AI), action, from→to state, reason, expandable evidence. Reused in the officer, admin and applicant views (applicant sees a filtered subset).</p>
+<h3>4.10 Admin Users</h3>
+<p>User list, create staff, assign role, deactivate.</p>
+<h3>4.11 Applicant: Award &amp; Fellowship (post-selection)</h3>
+<p>Award offer with accept/decline before the deadline; countdown for deadlines (e.g. admission window); joining/admission form; follow-up tasks (progress report, renewal) with due dates and status; disbursement status list (read-only); all statuses use the shared timeline.</p>
+<h3>4.12 Admin: Post-Selection Tracker</h3>
+<p>Table of awardees by scheme/stage/deadline, filters for overdue follow-ups, drill-in to review a follow-up (approve or raise deficiency, using the same components as scrutiny).</p>
+<h3>4.13 Institution Verifier</h3>
+<p>List of applicants linked to the user's institution, view the submitted joining/admission details, confirm or query. No access to other institutions' data or unrelated documents.</p>
+<h3>4.14 Finance Officer</h3>
+<p>Simple form/table to record disbursement status per awardee and period. Clear label &quot;status record only, no payment is made here&quot;.</p>
+<h3>4.15 Grievances / Help</h3>
+<p>Applicant and institution: raise a ticket (category, optional linked application), see thread and status. Staff: inbox with filters, assign, reply, close.</p>
+<h3>4.16 Reports</h3>
+<p>Pick report type, scheme and date range, preview, export CSV/XLSX/PDF (Hindi text must render correctly in exports).</p>
+<h3>4.17 Language Switch</h3>
+<p>EN/HI toggle in the header of both portals, persisted to the profile. No hardcoded strings, and layouts must tolerate longer Hindi text.</p>
+<hr>
+<h2>5. Dynamic Form Renderer Contract</h2>
+<pre><code class="language-ts">type FieldDef = {
+  key: string; type: &#39;text&#39;|&#39;number&#39;|&#39;date&#39;|&#39;select&#39;|&#39;radio&#39;|&#39;checkbox&#39;|&#39;textarea&#39;;
+  label: Record&lt;string,string&gt;; required?: boolean;
+  options?: {value:string; label:Record&lt;string,string&gt;}[];
+  validation?: { min?:number; max?:number; regex?:string; maxLength?:number };
+  showIf?: { field:string; op:string; value:any } | null;
+};
+</code></pre>
+<ul>
+<li><code>buildZodSchema(fields)</code> produces validation, and <code>evaluateShowIf</code> drives conditional fields (hidden fields are excluded from the payload).</li>
+<li>Unknown field types fall back to a safe &quot;unsupported field&quot; notice, and never crash the page.</li>
+<li>Renderer components are unit-tested against fixtures for NFST-like and NOS-like configs.</li>
+</ul>
+<hr>
+<h2>6. State, Data &amp; Error Handling</h2>
+<ul>
+<li>API client wrapper (fetch/axios) attaches the JWT, sets <code>X-Correlation-Id</code>, and normalizes errors <code>{code,message,details}</code>. On 401 it refreshes the session once, then redirects to login.</li>
+<li>TanStack Query keys per resource. AI job status is polled every 3–5 s until terminal, then stops.</li>
+<li>Every screen has explicit <strong>loading (skeletons), empty, error (retry), and forbidden</strong> states.</li>
+<li>Mutations use optimistic updates only for low-risk actions. Transitions and decisions wait for the server. Use <code>Idempotency-Key</code> on submit/transition.</li>
+<li>Toasts for success/failure. Confirmation dialogs for irreversible actions (submit, reject, publish).</li>
+</ul>
+<hr>
+<h2>7. UX, Accessibility &amp; Performance</h2>
+<ul>
+<li>WCAG 2.1 AA target: keyboard-navigable flows, visible focus, labelled inputs, ARIA for dialogs/tabs/tables, colour contrast, and never colour-only status (icon + text).</li>
+<li>Responsive from 360 px (applicant flows, since users may be on low-end phones); staff screens optimised for desktop ≥ 1280 px.</li>
+<li>Low-bandwidth: route-level code splitting, lazy-load PDF viewer and chart libraries, image compression before upload where safe, target initial JS &lt; 250 KB gzip for the login/applicant shell.</li>
+<li>Consistent design tokens, and light theme first, with dark theme optional.</li>
+<li>Plain-language microcopy. <strong>Full English + Hindi</strong> for both portals (UI strings and config labels), Noto Sans Devanagari loaded with a fallback stack, <code>lang</code> attribute set on the document, and test with long Hindi strings and mixed-script data.</li>
+</ul>
+<hr>
+<h2>8. Security (Frontend)</h2>
+<ul>
+<li>No secrets in the bundle. Tokens kept in Supabase's session storage handling, with no manual token copying to other stores.</li>
+<li>Render all user/document/AI-derived text as plain text (React default escaping), and never <code>dangerouslySetInnerHTML</code>.</li>
+<li>Document URLs are requested on demand (short-lived signed URLs), and not cached in state longer than their expiry.</li>
+<li>Client-side role gating is UX only. Do not assume it is security.</li>
+</ul>
+<hr>
+<h2>8.1 Deployment (Vercel)</h2>
+<ul>
+<li>Vite build deployed to Vercel, with <code>vercel.json</code> SPA rewrite (<code>/(.*)</code> → <code>/index.html</code>) so React Router deep links work on refresh.</li>
+<li>Env vars: <code>VITE_API_BASE_URL</code> (Render API), <code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code>. No other secrets.</li>
+<li>Preview deployments call the same API. The backend CORS allow-list must include the preview URL pattern.</li>
+<li>The Render API may cold-start, so show a friendly &quot;waking up the server&quot; state on the first request and retry with backoff.</li>
+<li>Route-level code splitting keeps the applicant shell small (see section 7).</li>
+</ul>
+<h2>9. Acceptance Criteria</h2>
+<ol>
+<li>An admin builds Scheme A and publishes it. The applicant form appears with no frontend code change.</li>
+<li>Scheme B (different fields, documents, rules, workflow) works in the same UI unchanged.</li>
+<li>Rule tester and officer workspace show rule-by-rule results with source references.</li>
+<li>Officer can view a document beside extracted fields and confidence, override with a reason, and raise a structured deficiency.</li>
+<li>Applicant receives a notification, resolves the deficiency, and sees an updated timeline.</li>
+<li>Committee sees the ranked shortlist and records decisions.</li>
+<li>Audit timeline reconstructs the whole journey.</li>
+<li>Keyboard-only walkthrough of applicant submit succeeds, and Lighthouse accessibility ≥ 90 on key pages.</li>
+<li>All screens have loading, empty, and error states.</li>
+<li>Workflow built visually in React Flow saves, validates, and drives the officer's action buttons with no code change.</li>
+<li>The whole applicant journey and a full officer review can be completed in Hindi, with no untranslated strings on key screens.</li>
+<li>Post-selection works: award acceptance, joining verification by an institution user, a follow-up submission, and disbursement status visible.</li>
+<li>Applicant and staff experiences are visibly separate portals.</li>
+</ol>
+<hr>
+<h2>10. Milestones</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Vite scaffold, design system, auth, role-based routing, API client</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Admin scheme list, builder (meta, form designer, documents), live preview</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Dynamic form renderer, applicant apply flow, document upload</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Rules builder, <strong>visual workflow editor (React Flow)</strong>, rule tester, publish/approval UI</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Scrutiny queue and workspace, AI flags, deficiency composer/response, timeline</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Committee + interview scoring, post-selection screens, institution/finance views, grievances, reports, notifications, analytics dashboard</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Accessibility pass, Playwright demo scripts, polish</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>11. Decisions &amp; Remaining Questions</h2>
+<p><strong>Decided:</strong> English + Hindi both; visual workflow editor included; Vercel hosting; two separate portals.</p>
+<p><strong>Working defaults (change any time):</strong></p>
+<ol>
+<li><strong>Look and feel:</strong> a clean, neutral government-style UI driven by a single theme-token file, so branding can be swapped later. Use placeholders instead of official emblems or logos.</li>
+<li><strong>Mobile:</strong> responsive web for the MVP (applicant flows work from 360 px). Dedicated mobile app is out of scope (SIH26238).</li>
+<li><strong>Hindi:</strong> first-pass translations in one locale file (<code>hi.json</code>) plus a small glossary of key terms (scheme, deficiency, scrutiny, etc.). Strings are marked &quot;draft translation&quot; until a Hindi-speaking teammate reviews them.</li>
+</ol>
+
+</body></html>

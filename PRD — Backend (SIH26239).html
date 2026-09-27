@@ -1,0 +1,566 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}</style><style>:root{color-scheme:light dark;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}}:root[data-theme="dark"]{color-scheme:dark;--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}:root[data-theme="light"]{color-scheme:light}@media print{:root,:root[data-theme="dark"]{color-scheme:light;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}}body{background:var(--md-bg);color:var(--md-text);max-width:720px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:10px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;overflow-wrap:break-word}body>:first-child{margin-top:0}h1,h2,h3,h4,h5,h6{margin:6px 0 0;line-height:1.25;font-weight:600;text-wrap:balance}h1{font-size:1.35em}h2{font-size:1.15em;color:var(--md-muted)}h3,h4,h5,h6{font-size:1em}p,ul,ol,blockquote,table,pre,hr{margin:0}strong{font-weight:600}a{color:var(--md-link);text-decoration:none}a:hover{text-decoration:underline}ul,ol{display:flex;flex-direction:column;gap:6px;padding-left:22px}ul{list-style:disc}ol{list-style:decimal}:is(li,td,th)>*+:is(p,ul,ol,blockquote){margin-top:6px}blockquote{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--md-rule);padding-left:10px;color:var(--md-muted)}:not(pre)>code{background:var(--md-fill);padding:1px 3px;border-radius:4px;font:.92em 'SF Mono',ui-monospace,Menlo,Consolas,monospace}a>code{background:none;color:inherit}pre{background:var(--md-fill);padding:10px 12px;border-radius:6px;overflow-x:auto;font:12px/1.5 'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-block:4px}pre code{background:none;padding:0;font:inherit}table{width:100%;border-collapse:separate;border-spacing:2px;font:inherit}th,td{padding:6px 8px;border-radius:3px;text-align:left;vertical-align:top}th{background:var(--md-fill-strong);font-weight:600}td{background:var(--md-fill)}:is(th,td) :not(pre)>code{background:transparent}hr{border:0;border-top:1px solid var(--md-rule-strong);margin-block:10px}img{max-width:100%;height:auto;border-radius:4px}</style>
+</head><body>
+<h1>PRD — Backend: Scholarship &amp; Fellowship Management System (SIH26239)</h1>
+<p><strong>Stack:</strong> Node.js, Express.js, Supabase (Postgres, Auth, Storage, Realtime), Gemini API
+<strong>Version:</strong> 1.0 (MVP) | <strong>Owner:</strong> Backend / Rules / AI workstreams</p>
+<hr>
+<h2>1. Purpose &amp; Goals</h2>
+<p>Build a <strong>scheme-agnostic administration engine</strong> for MoTA scholarships and fellowships. Scheme differences (eligibility, documents, workflow, selection) live in <strong>versioned configuration data</strong>, not code.</p>
+<p><strong>Goals</strong></p>
+<ol>
+<li>Two materially different schemes (NFST, NOS) run on one engine with zero code changes.</li>
+<li>Deterministic rules decide eligibility; Gemini only assists with unstructured documents; humans make final decisions.</li>
+<li>Every important action is auditable (append-only).</li>
+<li>Async document processing so AI jobs never block the API.</li>
+</ol>
+<p><strong>Non-goals (MVP):</strong> Pre-/Post-Matric schemes (state-implemented via NSP/state portals; the engine should be able to onboard them later), production NSP/PFMS/DigiLocker integration, blockchain integrity, predictive rejection models, authoritative certificate validation, native mobile backend.</p>
+<hr>
+<h2>2. Tech Stack &amp; Decisions</h2>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Choice</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Runtime / API</td>
+<td>Node.js 20 LTS, Express 4, TypeScript</td>
+<td>REST, versioned under <code>/api/v1</code></td>
+</tr>
+<tr>
+<td>Database</td>
+<td>Supabase Postgres</td>
+<td>JSONB for configs, RLS as defence-in-depth</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>Supabase Auth (JWT)</td>
+<td>Express verifies the JWT; role stored in <code>profiles.role</code> and mirrored to <code>app_metadata</code></td>
+</tr>
+<tr>
+<td>File storage</td>
+<td>Supabase Storage (private bucket)</td>
+<td>Signed URLs, short expiry</td>
+</tr>
+<tr>
+<td>AI</td>
+<td>Gemini API (multimodal, JSON output mode)</td>
+<td>Model name via env <code>GEMINI_MODEL</code>; server-side only</td>
+</tr>
+<tr>
+<td>Job queue</td>
+<td><code>pg-boss</code> (Postgres-backed)</td>
+<td>Avoids adding Redis for the MVP</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td>Zod</td>
+<td>Request bodies and Gemini output schemas</td>
+</tr>
+<tr>
+<td>Rules</td>
+<td>JSON rule DSL evaluated by our own evaluator (or <code>json-logic-js</code>)</td>
+<td>Must return rule-by-rule results</td>
+</tr>
+<tr>
+<td>Email / SMS</td>
+<td>Nodemailer/Resend (email); SMS as a stub adapter</td>
+<td>Adapter interface, swappable</td>
+</tr>
+<tr>
+<td>Logging / testing</td>
+<td>pino; Vitest + Supertest</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>3. Architecture (Modules)</h2>
+<pre><code>Express API ─ auth/rbac middleware ─ controllers
+   ├─ schemes      (config CRUD, versioning, publish)
+   ├─ applications (lifecycle, dynamic payload validation)
+   ├─ documents    (upload, classify, versions)
+   ├─ rules        (evaluator, explainable output)
+   ├─ workflow     (state machine, transitions, SLA)
+   ├─ ai           (Gemini client, prompts, extraction pipeline)
+   ├─ selection    (merit scoring, committee decisions)
+   ├─ notifications(templates, channels, events)
+   ├─ audit        (append-only writer)
+   └─ analytics    (aggregates)
+Worker process (pg-boss): ai.process_document, sla.scan, notify.send
+</code></pre>
+<p>The API and worker are separate entry points, deployed from one repo. Cross-module calls go through service functions, and <strong>every state change goes through <code>workflow.transition()</code></strong>, which writes the audit event in the same DB transaction.</p>
+<hr>
+<h2>4. Roles &amp; Access</h2>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Access</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>applicant</code></td>
+<td>Own applications and documents only</td>
+</tr>
+<tr>
+<td><code>scrutiny_officer</code></td>
+<td>Assigned or scheme-scoped applications</td>
+</tr>
+<tr>
+<td><code>scheme_admin</code></td>
+<td>Scheme builder, all applications in their schemes, reports</td>
+</tr>
+<tr>
+<td><code>committee_member</code></td>
+<td>Shortlisted applications for assigned schemes, record decisions</td>
+</tr>
+<tr>
+<td><code>institution_verifier</code></td>
+<td>Confirm admission/enrolment/joining for applicants of their own institution only</td>
+</tr>
+<tr>
+<td><code>finance_officer</code></td>
+<td>Record disbursement status entries (no payment processing)</td>
+</tr>
+<tr>
+<td><code>ministry_viewer</code></td>
+<td>Read-only aggregates, no PII</td>
+</tr>
+<tr>
+<td><code>super_admin</code></td>
+<td>User and role management</td>
+</tr>
+</tbody>
+</table>
+<p>Enforcement: Express middleware <code>requireRole()</code> plus <strong>ownership/scope checks in the service layer</strong> (prevents IDOR). Supabase RLS policies mirror the same rules. The service-role key is used only inside the backend and never sent to the client.</p>
+<hr>
+<h2>5. Data Model (Core Tables)</h2>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key columns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>profiles</code></td>
+<td>id (= auth.users.id), role, full_name, phone, state, <strong>preferred_language</strong> (en/hi), institution_id</td>
+</tr>
+<tr>
+<td><code>institutions</code></td>
+<td>id, name, type (india/foreign), reference_code, status</td>
+</tr>
+<tr>
+<td><code>reference_lists</code></td>
+<td>id, key (e.g. eligible_institutes), version, items JSONB, source_ref, effective_from</td>
+</tr>
+<tr>
+<td><code>schemes</code></td>
+<td>id, code (NFST/NOS), name, owner_id, status</td>
+</tr>
+<tr>
+<td><code>scheme_versions</code></td>
+<td>id, scheme_id, version, <strong>config JSONB</strong>, source_ref, effective_from, effective_to, status (draft/approved/published/retired), approved_by</td>
+</tr>
+<tr>
+<td><code>applications</code></td>
+<td>id, scheme_version_id, applicant_id, <strong>form_data JSONB</strong>, current_state, assigned_officer_id, submitted_at, sla_due_at</td>
+</tr>
+<tr>
+<td><code>documents</code></td>
+<td>id, application_id, requirement_key, doc_type, storage_path, version, status</td>
+</tr>
+<tr>
+<td><code>document_extractions</code></td>
+<td>id, document_id, model, <strong>fields JSONB</strong>, per-field confidence, quality_flags, raw_response, created_at</td>
+</tr>
+<tr>
+<td><code>rule_evaluations</code></td>
+<td>id, application_id, scheme_version_id, overall_result, <strong>results JSONB</strong> (rule-by-rule), evaluated_at</td>
+</tr>
+<tr>
+<td><code>ai_flags</code></td>
+<td>id, application_id, document_id, type (missing_page, mismatch, low_quality, duplicate_suspect), severity, evidence JSONB, status (open/confirmed/dismissed), resolved_by</td>
+</tr>
+<tr>
+<td><code>deficiencies</code></td>
+<td>id, application_id, raised_by, items JSONB, status, due_at, resolved_at</td>
+</tr>
+<tr>
+<td><code>selections</code></td>
+<td>id, application_id, merit_score, score_breakdown JSONB, rank, committee_decision, remarks, decided_by</td>
+</tr>
+<tr>
+<td><code>notifications</code></td>
+<td>id, user_id, application_id, channel, template_key, language, status, sent_at</td>
+</tr>
+<tr>
+<td><code>post_selection_records</code></td>
+<td>id, application_id, award_status (offered/accepted/joined/admission_pending/active/completed/withdrawn), accepted_at, institution_id, joining_date, deadline_at</td>
+</tr>
+<tr>
+<td><code>follow_ups</code></td>
+<td>id, record_id, type (joining_report, progress_report, renewal, other), due_at, status, submitted_data JSONB, reviewed_by</td>
+</tr>
+<tr>
+<td><code>disbursements</code></td>
+<td>id, record_id, period, amount, currency, channel (bank/mission), status (pending/processed/failed), reference, entered_by</td>
+</tr>
+<tr>
+<td><code>grievances</code></td>
+<td>id, application_id (nullable), raised_by, category, subject, status, assigned_to, thread JSONB</td>
+</tr>
+<tr>
+<td><code>audit_events</code></td>
+<td>id, application_id (nullable), correlation_id, actor_id / actor_type (user, system, ai), action, from_state, to_state, reason, evidence JSONB, created_at</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rules</strong></p>
+<ul>
+<li><code>audit_events</code> is append-only: a DB trigger rejects UPDATE/DELETE, and app-role permissions revoke them. Optional <code>prev_hash</code>/<code>hash</code> chain (SHA-256) for tamper evidence.</li>
+<li>AI signal, rule result and human decision are stored <strong>in separate tables</strong> and never merged.</li>
+<li>Published <code>scheme_versions</code> are immutable. Applications pin to the version they were submitted under.</li>
+</ul>
+<hr>
+<h2>6. Scheme Configuration Contract</h2>
+<p>One JSON document per scheme version, validated by a Zod schema on save.</p>
+<pre><code class="language-json">{
+  &#34;meta&#34;: { &#34;name&#34;: &#34;NFST&#34;, &#34;source_ref&#34;: &#34;MoTA guideline URL&#34;, &#34;effective_from&#34;: &#34;YYYY-MM-DD&#34; },
+  &#34;form&#34;: { &#34;sections&#34;: [ { &#34;id&#34;: &#34;personal&#34;, &#34;fields&#34;: [
+      { &#34;key&#34;: &#34;annual_income&#34;, &#34;type&#34;: &#34;number&#34;, &#34;label&#34;: {&#34;en&#34;: &#34;Annual family income&#34;},
+        &#34;required&#34;: true, &#34;validation&#34;: {&#34;min&#34;: 0}, &#34;showIf&#34;: null } ] } ] },
+  &#34;documents&#34;: [ { &#34;key&#34;: &#34;income_cert&#34;, &#34;type&#34;: &#34;income_certificate&#34;, &#34;mandatory&#34;: true,
+      &#34;maxSizeMb&#34;: 5, &#34;formats&#34;: [&#34;pdf&#34;,&#34;jpg&#34;,&#34;png&#34;], &#34;validityDays&#34;: 365 } ],
+  &#34;eligibility&#34;: { &#34;all&#34;: [
+      { &#34;id&#34;: &#34;R1&#34;, &#34;field&#34;: &#34;annual_income&#34;, &#34;op&#34;: &#34;&lt;=&#34;, &#34;value&#34;: 0, &#34;source&#34;: &#34;clause ref&#34; },
+      { &#34;id&#34;: &#34;R2&#34;, &#34;field&#34;: &#34;category&#34;, &#34;op&#34;: &#34;==&#34;, &#34;value&#34;: &#34;ST&#34; } ] },
+  &#34;consistency&#34;: [ { &#34;id&#34;: &#34;C1&#34;, &#34;formField&#34;: &#34;annual_income&#34;, &#34;docKey&#34;: &#34;income_cert&#34;,
+      &#34;extractedField&#34;: &#34;income&#34;, &#34;match&#34;: &#34;numeric_tolerance&#34;, &#34;tolerancePct&#34;: 0 } ],
+  &#34;workflow&#34;: { &#34;states&#34;: [&#34;submitted&#34;,&#34;pre_check&#34;,&#34;under_scrutiny&#34;,&#34;deficiency&#34;,&#34;eligible&#34;,&#34;ineligible&#34;,&#34;shortlisted&#34;,&#34;selected&#34;,&#34;rejected&#34;],
+      &#34;transitions&#34;: [ { &#34;from&#34;: &#34;under_scrutiny&#34;, &#34;to&#34;: &#34;deficiency&#34;, &#34;roles&#34;: [&#34;scrutiny_officer&#34;] } ],
+      &#34;sla&#34;: { &#34;under_scrutiny&#34;: &#34;72h&#34; },
+      &#34;layout&#34;: { &#34;nodes&#34;: { &#34;submitted&#34;: {&#34;x&#34;:0,&#34;y&#34;:0} } } },   // positions for the visual editor
+  &#34;selection&#34;: { &#34;seats&#34;: 0, &#34;quotas&#34;: [ { &#34;key&#34;: &#34;pvtg&#34;, &#34;seats&#34;: 0, &#34;when&#34;: {&#34;field&#34;:&#34;is_pvtg&#34;,&#34;op&#34;:&#34;==&#34;,&#34;value&#34;:true} } ],
+      &#34;preferences&#34;: [ { &#34;field&#34;: &#34;gender&#34;, &#34;op&#34;: &#34;==&#34;, &#34;value&#34;: &#34;F&#34;, &#34;boost&#34;: 0 } ],
+      &#34;criteria&#34;: [ { &#34;field&#34;: &#34;marks_pct&#34;, &#34;weight&#34;: 0.6 } ],
+      &#34;stages&#34;: [&#34;committee&#34;, &#34;interview&#34;] },
+  &#34;postSelection&#34;: { &#34;followUps&#34;: [ { &#34;type&#34;: &#34;joining_report&#34;, &#34;dueAfterDays&#34;: 0 }, { &#34;type&#34;: &#34;progress_report&#34;, &#34;everyMonths&#34;: 0 } ],
+      &#34;acceptanceDeadlineDays&#34;: 0, &#34;renewal&#34;: true },
+  &#34;notifications&#34;: [ { &#34;event&#34;: &#34;deficiency_raised&#34;, &#34;template&#34;: &#34;deficiency_v1&#34;, &#34;channels&#34;: [&#34;email&#34;,&#34;in_app&#34;] } ]
+}
+</code></pre>
+<p>Placeholder values above are illustrative only. <strong>Real thresholds must come from official guidelines, with <code>source</code> and <code>effective_from</code> stored per rule.</strong></p>
+<hr>
+<h3>6.1 What the official MoTA pages imply for the config model</h3>
+<p>Observed at tribal.nic.in/ScholarshiP.aspx and dbttribal.gov.in/AllScheme.aspx (treat every number as <strong>to be verified against guideline PDFs</strong> before it becomes a rule value):</p>
+<ul>
+<li><strong>Selection differs structurally:</strong> NFST is merit-ranked on Master's marks with preference for girls, Divyangjan and PVTGs; NOS uses an expert-committee <strong>interview-based</strong> merit list with a PVTG sub-quota; Top Class uses Class XII marks. So <code>selection</code> must support <strong>seats, quotas, preference boosts, weighted criteria and an interview stage</strong> (panel scores).</li>
+<li><strong>Reference lists:</strong> Top Class eligibility depends on a list of notified premier institutes, and the page itself shows two different counts (246 vs 265). This is exactly why lists and rules carry <code>source_ref</code> + <code>effective_from</code> and are versioned (<code>reference_lists</code>, operator <code>in_ref_list</code>).</li>
+<li><strong>NOS post-selection:</strong> the awardee has a fixed window (stated as 2 years) to secure foreign admission, so post-selection needs <strong>deadline timers and reminders</strong>. Disbursement goes via Indian Missions/MEA, while NFST uses bank linkage, so <code>disbursements.channel</code> differs by scheme.</li>
+<li><strong>Institution role is real:</strong> existing portals have a university verification module and university queries.</li>
+<li>Existing portals also lean on DigiLocker, UMANG and Aadhaar-linked flows. We model these as <strong>adapters</strong>, not live integrations (see 10.1).</li>
+</ul>
+<h2>7. Rules Engine</h2>
+<ul>
+<li>Operators: <code>== != &lt; &lt;= &gt; &gt;= in not_in in_ref_list between exists</code>; groups <code>all</code> / <code>any</code> / <code>not</code>, nestable.</li>
+<li>Input: <code>form_data</code> plus verified extracted values. Output per rule: <code>{id, passed, actual, expected, source}</code>, plus an overall result (<code>eligible</code>, <code>ineligible</code>, <code>needs_review</code> when required data is missing).</li>
+<li>Pure, side-effect-free functions with unit tests (target: 100% operator coverage).</li>
+<li>Re-evaluated on submit, on resubmission, and on officer edits to verified fields.</li>
+</ul>
+<hr>
+<h2>8. Workflow Engine</h2>
+<ul>
+<li>The state machine is loaded from <code>scheme_versions.config.workflow</code>. <code>transition(appId, to, actor, reason, evidence)</code> checks: the transition is allowed, the role is permitted, and the current state matches (optimistic lock on <code>updated_at</code>).</li>
+<li>On every transition: update state, write the audit event, enqueue notifications and set the SLA timer, all in one transaction.</li>
+<li><code>sla.scan</code> runs every 15 minutes, flags breached applications, notifies the scheme admin, and writes an <code>sla_breach</code> audit event.</li>
+<li>Deficiency loop: officer raises structured items → state <code>deficiency</code> → applicant resubmits specific items → back to <code>under_scrutiny</code>. Full history retained.</li>
+</ul>
+<hr>
+<h3>8.1 Post-Selection &amp; Fellowship Management</h3>
+<p>The problem statement explicitly includes post-selection/fellowship management, so it is a first-class module:</p>
+<ul>
+<li><strong>Award offer → acceptance:</strong> selected applicants accept or decline within a configured deadline. Non-response triggers reminders, then escalation to the admin.</li>
+<li><strong>Joining/admission confirmation:</strong> applicant submits details, the <code>institution_verifier</code> confirms. For NOS-like schemes, a countdown to the admission deadline runs, with reminder notifications.</li>
+<li><strong>Follow-ups from config (<code>postSelection.followUps</code>):</strong> progress reports, renewals, and other periodic submissions, generated on schedule by a worker job (<code>followups.schedule</code>), reviewed by officers, using the same workflow, deficiency and audit machinery as applications.</li>
+<li><strong>Disbursement ledger:</strong> authorised <code>finance_officer</code> records status per period (pending/processed/failed, reference). MVP only records and displays status. Real PFMS/bank/Mission integration is an adapter, out of scope.</li>
+<li><strong>Grievances/helpdesk:</strong> applicant or institution raises a ticket (optionally linked to an application), staff reply in a thread, statuses and SLA apply. Existing portals carry large per-scheme grievance loads, so this directly supports the &quot;repeated correspondence&quot; problem.</li>
+</ul>
+<h2>9. AI Service (Gemini)</h2>
+<p><strong>Pipeline</strong> (job <code>ai.process_document</code>, triggered on upload):</p>
+<ol>
+<li>Fetch the file from Storage, send it to Gemini (inline for small files, Files API for large ones) with a <strong>document-type-specific prompt</strong> and a <strong>JSON response schema</strong>.</li>
+<li>Request: <code>doc_type</code> classification, extracted fields, per-field confidence (0–1), quality flags (blurry, cropped, missing pages, rotated), plus the <strong>text evidence</strong> each field came from.</li>
+<li>Validate output with Zod. On failure, retry once with a repair prompt; otherwise mark <code>extraction_failed</code> and route to human review.</li>
+<li>Store in <code>document_extractions</code>. Run consistency checks (form vs extracted) and create <code>ai_flags</code>.</li>
+<li>Low confidence (below configurable threshold, default 0.75) or any conflict → <code>needs_review</code>. <strong>Never auto-reject.</strong></li>
+</ol>
+<p><strong>Guardrails</strong></p>
+<ul>
+<li><code>GEMINI_API_KEY</code> is server-side only, and prompts contain no more PII than needed.</li>
+<li>Treat document text as untrusted: instruct the model to ignore instructions embedded in documents, and ignore extra keys in the output.</li>
+<li>Rate limit and retry with backoff on 429/5xx. Record model name and prompt version with each result.</li>
+<li>The UI must label results &quot;AI-assisted screening&quot;, not &quot;verified/authentic&quot;.</li>
+<li><strong>Use synthetic or authorized documents only.</strong> Free-tier Gemini usage may be used for model improvement, so use a paid tier or approved arrangement before any real applicant data.</li>
+<li>Duplicate signals (MVP): identical file hash, same Aadhaar-like/ID field across applications (hashed), same name+DOB+scheme.</li>
+</ul>
+<hr>
+<h2>10. API Surface (<code>/api/v1</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Endpoints</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Auth/Profile</td>
+<td><code>GET /me</code>, <code>PATCH /me</code> (sign-in handled by Supabase client)</td>
+</tr>
+<tr>
+<td>Users (admin)</td>
+<td><code>GET/POST /users</code>, <code>PATCH /users/:id/role</code></td>
+</tr>
+<tr>
+<td>Schemes</td>
+<td><code>GET/POST /schemes</code>, <code>GET /schemes/:id</code>, <code>POST /schemes/:id/versions</code>, <code>PUT /scheme-versions/:id</code> (draft), <code>POST /scheme-versions/:id/validate</code>, <code>/approve</code>, <code>/publish</code>, <code>GET /schemes/:id/form</code> (rendered form definition)</td>
+</tr>
+<tr>
+<td>Applications</td>
+<td><code>POST /applications</code> (draft), <code>PATCH /applications/:id</code>, <code>POST /applications/:id/submit</code>, <code>GET /applications</code> (role-scoped, filters: scheme, state, flag, officer, date), <code>GET /applications/:id</code>, <code>GET /applications/:id/timeline</code></td>
+</tr>
+<tr>
+<td>Documents</td>
+<td><code>POST /applications/:id/documents</code> (multipart or signed upload), <code>GET /documents/:id/url</code>, <code>GET /documents/:id/extraction</code>, <code>POST /documents/:id/reprocess</code></td>
+</tr>
+<tr>
+<td>Rules</td>
+<td><code>POST /applications/:id/evaluate</code>, <code>GET /applications/:id/evaluation</code></td>
+</tr>
+<tr>
+<td>Scrutiny</td>
+<td><code>POST /applications/:id/assign</code>, <code>/transition</code>, <code>POST /ai-flags/:id/resolve</code>, <code>PATCH /extractions/:id/fields</code> (officer override with reason)</td>
+</tr>
+<tr>
+<td>Deficiency</td>
+<td><code>POST /applications/:id/deficiencies</code>, <code>POST /deficiencies/:id/respond</code></td>
+</tr>
+<tr>
+<td>Selection</td>
+<td><code>POST /schemes/:id/shortlist/generate</code>, <code>GET /schemes/:id/shortlist</code>, <code>POST /applications/:id/committee-decision</code></td>
+</tr>
+<tr>
+<td>Notifications</td>
+<td><code>GET /notifications</code>, <code>PATCH /notifications/:id/read</code></td>
+</tr>
+<tr>
+<td>Analytics</td>
+<td><code>GET /analytics/overview</code>, <code>/by-stage</code>, <code>/processing-time</code>, <code>/deficiency-reasons</code> (role-scoped, aggregate only)</td>
+</tr>
+<tr>
+<td>Audit</td>
+<td><code>GET /audit?applicationId=</code></td>
+</tr>
+<tr>
+<td>Post-selection</td>
+<td><code>POST /applications/:id/award/respond</code>, <code>GET /post-selection</code>, <code>GET /post-selection/:id</code>, <code>POST /post-selection/:id/joining</code>, <code>POST /post-selection/:id/verify</code> (institution), <code>GET/POST /follow-ups</code>, <code>POST /follow-ups/:id/submit</code>, <code>/review</code></td>
+</tr>
+<tr>
+<td>Disbursement</td>
+<td><code>GET /post-selection/:id/disbursements</code>, <code>POST /post-selection/:id/disbursements</code> (finance role)</td>
+</tr>
+<tr>
+<td>Grievances</td>
+<td><code>POST /grievances</code>, <code>GET /grievances</code>, <code>POST /grievances/:id/reply</code>, <code>PATCH /grievances/:id/status</code></td>
+</tr>
+<tr>
+<td>Reports</td>
+<td>`GET /reports/:type?format=csv</td>
+</tr>
+<tr>
+<td>Reference data</td>
+<td><code>GET/POST /reference-lists</code>, <code>POST /reference-lists/:id/versions</code></td>
+</tr>
+<tr>
+<td>Import (interop)</td>
+<td><code>POST /integrations/import/applications</code> (API-key + HMAC, idempotent, validated against the scheme version)</td>
+</tr>
+<tr>
+<td>Health</td>
+<td><code>GET /health</code>, <code>GET /ready</code></td>
+</tr>
+</tbody>
+</table>
+<p>Conventions: JSON only, errors as <code>{error:{code,message,details}}</code>, cursor pagination, <code>Idempotency-Key</code> header on submit/transition, <code>X-Correlation-Id</code> propagated to logs and audit.</p>
+<hr>
+<h3>10.1 Registration, Identity &amp; Integrations (feasible scope)</h3>
+<ul>
+<li><strong>Registration:</strong> native applicant registration via Supabase Auth (email + phone OTP). Staff accounts are created by admins. Applicant profile stores only fields the schemes need.</li>
+<li><strong>Identity adapter:</strong> <code>IdentityProvider</code> interface (<code>verifyIdentity</code>, <code>fetchDocument</code>) with a <code>LocalProvider</code> for the MVP and <strong>stub adapters</strong> for DigiLocker and NSP-style SSO behind feature flags. We do <strong>not</strong> claim live integration, since these need government onboarding/credentials.</li>
+<li><strong>Import API:</strong> lets an existing portal push applications into this system in bulk or one at a time, showing the &quot;administration layer that complements existing infrastructure&quot; positioning.</li>
+<li><strong>PFMS/bank/Mission disbursement:</strong> adapter interface, mocked for demo.</li>
+</ul>
+<h3>10.2 Localization (English + Hindi)</h3>
+<ul>
+<li><code>profiles.preferred_language</code>; notification templates exist in both languages and the send language follows the recipient's preference.</li>
+<li><strong>Publish validation:</strong> every applicant-visible string (form labels, options, document names, rule messages, template text) must have both <code>en</code> and <code>hi</code>, or publish is blocked.</li>
+<li>Gemini prompts and the evaluation dataset must include <strong>bilingual (Hindi/English) documents and Devanagari text</strong>. Report the accuracy per language.</li>
+<li>PDF/XLSX exports use a Devanagari-capable font (e.g. Noto Sans Devanagari). Storage is UTF-8 throughout.</li>
+</ul>
+<h2>11. Security &amp; Privacy</h2>
+<ul>
+<li>Verify the Supabase JWT on every request. Deny by default. Rate limit auth-adjacent and upload routes (<code>express-rate-limit</code>), plus <code>helmet</code> and strict CORS allow-list.</li>
+<li>Upload validation: MIME sniffing (not just extension), size limits, an allow-list of formats, randomised storage paths, and AV scan hook (stub for the MVP).</li>
+<li>Documents are served only via short-lived signed URLs, issued after an authorization check. Each issuance is audited.</li>
+<li>Secrets in environment variables only. Never log document contents or full PII.</li>
+<li>Scheme config changes need approval (maker-checker: creator ≠ approver).</li>
+<li>Retention: configurable, <strong>no invented period</strong>. Pending confirmation from official requirements.</li>
+<li>Test for IDOR, role escalation, malicious uploads, and prompt injection in documents.</li>
+</ul>
+<hr>
+<h2>12. Non-Functional Requirements</h2>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Target (MVP)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API latency</td>
+<td>p95 &lt; 500 ms for non-AI endpoints</td>
+</tr>
+<tr>
+<td>AI processing</td>
+<td>Single document p95 &lt; 30 s, asynchronous, status pollable</td>
+</tr>
+<tr>
+<td>Failure handling</td>
+<td>Job retries (3, exponential backoff), dead-letter queue, visible failure status</td>
+</tr>
+<tr>
+<td>Reliability</td>
+<td>Transactional state + audit writes, idempotent submit</td>
+</tr>
+<tr>
+<td>Observability</td>
+<td>Structured logs with correlation IDs, <code>/health</code>, job metrics</td>
+</tr>
+<tr>
+<td>Config over code</td>
+<td>Adding a scheme requires no deploy</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>12.1 Deployment (Render)</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API</td>
+<td>Render Web Service (Node), <code>/health</code> health check, auto-deploy from main</td>
+</tr>
+<tr>
+<td>Worker</td>
+<td>Render <strong>Background Worker</strong> running the pg-boss/AI jobs. On a free/low tier, set <code>RUN_WORKER=true</code> on the API to run jobs in-process</td>
+</tr>
+<tr>
+<td>Cold starts</td>
+<td>Free web services sleep when idle. Use a paid instance or warm it before demos</td>
+</tr>
+<tr>
+<td>CORS</td>
+<td>Allow-list the Vercel production domain, plus a regex for preview URLs, and credentials disabled (Bearer tokens)</td>
+</tr>
+<tr>
+<td>Uploads</td>
+<td>Browser uploads directly to Supabase Storage via signed URLs, so the Render API never proxies large files</td>
+</tr>
+<tr>
+<td>DB</td>
+<td>API through the Supabase pooler. pg-boss should use a direct/session connection (verify against pg-boss docs)</td>
+</tr>
+<tr>
+<td>Migrations</td>
+<td>Supabase CLI migrations run from CI, never ad hoc</td>
+</tr>
+<tr>
+<td>Secrets</td>
+<td>Render environment groups: <code>SUPABASE_URL</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code>, <code>SUPABASE_JWT_SECRET</code>, <code>GEMINI_API_KEY</code>, <code>GEMINI_MODEL</code>, <code>CORS_ORIGINS</code>, <code>IMPORT_HMAC_SECRET</code></td>
+</tr>
+</tbody>
+</table>
+<h2>13. Acceptance Criteria</h2>
+<ol>
+<li>Create NFST and NOS via API/config only, both pass through submit → scrutiny → deficiency → shortlist.</li>
+<li>A third scheme is created live with no code change or redeploy.</li>
+<li>Rule evaluation returns rule-by-rule explainable output with source references.</li>
+<li>Gemini extraction produces stored fields, confidence and flags; low confidence never auto-rejects.</li>
+<li>Audit replay reconstructs the full application history; UPDATE/DELETE on audit rows fails.</li>
+<li>Unauthorized cross-user access attempts return 403/404 in automated tests.</li>
+<li>A labelled synthetic dataset yields reported metrics: field accuracy, deficiency precision/recall, rule test pass rate, reported separately for English and Hindi documents.</li>
+<li>NFST and NOS run end-to-end (including their different selection setups: preferences/quota/interview), and the live third scheme is built from official Top Class scheme data.</li>
+<li>Post-selection works: acceptance, joining verification by an institution user, a scheduled follow-up, and a disbursement status entry, all audited.</li>
+<li>Publishing a scheme with a missing Hindi label is blocked.</li>
+</ol>
+<hr>
+<h2>14. Milestones</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Deliverable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Repo, Supabase project, migrations, auth middleware, RBAC, CI</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Schemes and versioning, config validation, dynamic form definition endpoint</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Applications, documents upload/storage, rules engine, workflow and audit</td>
+</tr>
+<tr>
+<td>3</td>
+<td>pg-boss worker, Gemini pipeline, flags, consistency checks</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Deficiency loop, notifications, SLA scan, selection (quotas/preferences/interview), post-selection, grievances, reports</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Analytics, security tests, synthetic dataset evaluation, demo seed data</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>15. Decisions &amp; Remaining Questions</h2>
+<p><strong>Decided:</strong> native registration plus import API and adapter stubs (10.1); English + Hindi both; visual workflow editor; Render (API/worker) + Vercel (frontend).</p>
+<p><strong>Working defaults (change any time):</strong></p>
+<ol>
+<li><strong>Rule values:</strong> the Product/Research workstream enters NFST, NOS and Top Class rules from the public guideline PDFs, each with <code>source_ref</code> and <code>effective_from</code>. The demo labels these &quot;prototype configuration based on public guidelines, not official sign-off&quot;. Nothing is presented as ministry-approved.</li>
+<li><strong>Data:</strong> synthetic documents and applicants only. No real applicant data.</li>
+<li><strong>Notifications:</strong> email + in-app for the MVP. SMS stays a stub adapter.</li>
+</ol>
+
+</body></html>

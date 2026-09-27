@@ -1,0 +1,229 @@
+@import "tailwindcss";
+
+@theme {
+  /* The existing teal utilities now share a warm orange brand scale. */
+  --color-teal-50: #fff5ec;
+  --color-teal-100: #ffe8d2;
+  --color-teal-200: #ffcf9f;
+  --color-teal-300: #ffad67;
+  --color-teal-400: #fb8838;
+  --color-teal-500: #ea681d;
+  --color-teal-600: #ce5011;
+  --color-teal-700: #a83e0d;
+  --color-teal-800: #843309;
+  --color-teal-900: #62270b;
+  --color-navy-50: #f6f3ef;
+  --color-navy-100: #e8e2da;
+  --color-navy-200: #cfc6bb;
+  --color-navy-300: #a89c8f;
+  --color-navy-400: #81766c;
+  --color-navy-500: #5c534b;
+  --color-navy-600: #413a34;
+  --color-navy-700: #302a25;
+  --color-navy-800: #211d19;
+  --color-navy-900: #161411;
+  --color-gray-50: #f9f7f3;
+  --color-gray-100: #f2eee8;
+  --color-gray-200: #e4ded5;
+  --color-gray-300: #ccc3b8;
+  --color-gray-400: #938980;
+  --color-gray-500: #70675e;
+  --color-gray-600: #554e47;
+  --color-gray-700: #3c3630;
+  --color-gray-800: #292520;
+  --color-gray-900: #191714;
+}
+
+:root {
+  --page: #f9f7f3;
+  --surface: #fffdfa;
+  --surface-soft: #f4f0e9;
+  --ink: #191714;
+  --muted: #70675e;
+  --line: #e8e0d6;
+  --accent: #e66a20;
+  --focus: #f58b41;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  html, body { @apply antialiased; background: var(--page); color: var(--ink); }
+  body { font-family: 'Inter', sans-serif; }
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+}
+
+.hindi-text { font-family: 'Noto Sans Devanagari', sans-serif; }
+
+/* The theme switch is shared by the landing page and every workspace. */
+.theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center; gap: .55rem;
+  min-height: 38px; padding: .5rem .8rem; border: 1px solid var(--line);
+  border-radius: 999px; background: var(--surface); color: var(--ink);
+  font-size: .75rem; font-weight: 700; white-space: nowrap; cursor: pointer;
+  box-shadow: 0 2px 10px rgb(32 25 17 / .045);
+  transition: background .25s, color .25s, border-color .25s, transform .25s, box-shadow .25s;
+}
+.theme-toggle:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 6px 20px rgb(155 77 25 / .12); }
+.theme-toggle svg { color: var(--accent); }
+.theme-toggle-compact { width: 38px; padding: 0; }
+.theme-toggle-compact span { display: none; }
+
+/* Landing: a restrained editorial composition with tactile, responsive cards. */
+.home-shell {
+  isolation: isolate;
+  background: radial-gradient(ellipse 40% 35% at 83% 6%, rgb(243 141 67 / .19), transparent 90%),
+              linear-gradient(145deg, #f8f4ed 0%, #fbf8f3 52%, #efe9e0 100%);
+}
+.home-shell::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-image: linear-gradient(rgb(42 30 17 / .025) 1px, transparent 1px),
+                    linear-gradient(90deg, rgb(42 30 17 / .025) 1px, transparent 1px);
+  background-size: 44px 44px; mask-image: linear-gradient(to bottom, black, transparent 75%);
+}
+.home-shell::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 12px;
+  background: repeating-linear-gradient(90deg, #1b1713 0 55px, #e66a20 55px 110px);
+}
+.home-glow { position: absolute; width: 27rem; height: 27rem; border-radius: 50%; filter: blur(72px); opacity: .15; }
+.home-glow-one { top: -15rem; left: -10rem; background: #f18c40; animation: drift 15s ease-in-out infinite alternate; }
+.home-glow-two { bottom: -18rem; right: -9rem; background: #ea681d; animation: drift 19s ease-in-out infinite alternate-reverse; }
+.home-intro { animation: rise-in .7s ease both; }
+.home-mark {
+  background: #1b1713; color: white; position: relative; border: 2px solid #1b1713;
+  box-shadow: 7px 7px 0 #ea681d, 0 14px 32px rgb(35 23 16 / .12);
+}
+.home-mark::after { content: ''; position: absolute; width: 9px; height: 9px; background: #f58b41; border-radius: 50%; top: 9px; right: 9px; }
+.home-title { letter-spacing: -.055em; font-size: clamp(2.65rem, 6vw, 4.35rem); line-height: 1.05; }
+.home-panel-wrap { animation: rise-in .7s .13s ease both; }
+.home-panel {
+  background: var(--surface); border: 1px solid var(--line) !important; border-radius: 26px;
+  box-shadow: 0 18px 55px rgb(35 26 17 / .09), 0 2px 8px rgb(35 26 17 / .03);
+}
+.portal-choice {
+  align-items: flex-start; text-align: left; min-height: 172px; padding: 1.5rem;
+  background: var(--surface-soft); border: 1px solid var(--line) !important;
+  border-radius: 18px; box-shadow: none;
+  transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s, border-color .28s, background .28s;
+}
+.portal-choice > svg { width: 30px; height: 30px; margin-bottom: 1.2rem; color: var(--accent) !important; }
+.portal-choice > span { text-align: left; }
+.portal-choice:hover {
+  transform: translateY(-5px); background: var(--surface); border-color: var(--accent) !important;
+  box-shadow: 0 12px 24px rgb(63 37 20 / .11);
+}
+.portal-choice:hover .absolute svg { color: var(--accent); }
+.portal-choice:nth-child(2) { animation-delay: .05s; }
+.portal-choice:nth-child(3) { animation-delay: .1s; }
+.portal-choice:nth-child(4) { animation-delay: .15s; }
+@keyframes rise-in { from { opacity: 0; transform: translateY(17px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes drift { from { transform: translate(0,0); } to { transform: translate(30px,18px); } }
+
+/* Shared details make dense staff screens feel considered without altering their data. */
+header { transition: background .25s, border-color .25s; }
+header .bg-gradient-to-br { background-image: linear-gradient(135deg, #f58b41, #bd450e); }
+main > div:not(.home-shell) { animation: rise-in .45s ease both; }
+main h1, main h2 { letter-spacing: -.025em; }
+main .rounded-xl, main .rounded-2xl { transition: background-color .25s, border-color .25s, box-shadow .25s, transform .25s; }
+main .shadow-sm:hover, main .shadow-md:hover { box-shadow: 0 9px 25px rgb(42 27 15 / .09); }
+
+/* All existing screens use Tailwind's light utilities. These semantic overrides
+   preserve their content and status colors while giving every screen a real dark mode. */
+html[data-theme="dark"] {
+  --page: #141210; --surface: #201c18; --surface-soft: #29231e;
+  --ink: #f5efe6; --muted: #b8aa9c; --line: #39322b;
+  --accent: #fb9149; --focus: #ffa660;
+}
+html[data-theme="dark"] body,
+html[data-theme="dark"] .bg-gray-50,
+html[data-theme="dark"] .bg-gray-100,
+html[data-theme="dark"] .bg-gray-200,
+html[data-theme="dark"] [class*="bg-gray-50/"],
+html[data-theme="dark"] [class*="bg-gray-100/"] { background-color: var(--page); }
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] [class*="bg-white/80"],
+html[data-theme="dark"] [class*="bg-white/90"],
+html[data-theme="dark"] [class*="bg-white/95"],
+html[data-theme="dark"] .home-panel { background-color: var(--surface); }
+html[data-theme="dark"] .bg-navy-50,
+html[data-theme="dark"] [class*="bg-navy-50/"],
+html[data-theme="dark"] .portal-choice { background-color: var(--surface-soft); }
+html[data-theme="dark"] .bg-navy-900,
+html[data-theme="dark"] .bg-navy-800 { background-color: #0f0e0c; }
+html[data-theme="dark"] .bg-navy-700 { background-color: #30241b; }
+html[data-theme="dark"] .text-gray-900,
+html[data-theme="dark"] .text-gray-800,
+html[data-theme="dark"] .text-gray-700,
+html[data-theme="dark"] .text-navy-700,
+html[data-theme="dark"] .text-navy-600 { color: var(--ink); }
+html[data-theme="dark"] .text-gray-600,
+html[data-theme="dark"] .text-gray-500,
+html[data-theme="dark"] .text-gray-400,
+html[data-theme="dark"] .text-navy-500,
+html[data-theme="dark"] .text-navy-400 { color: var(--muted); }
+html[data-theme="dark"] .text-gray-300 { color: #8c8176; }
+html[data-theme="dark"] .border-gray-100,
+html[data-theme="dark"] .border-gray-200,
+html[data-theme="dark"] .border-gray-300,
+html[data-theme="dark"] .border-navy-100,
+html[data-theme="dark"] .border-navy-200,
+html[data-theme="dark"] .ring-gray-200,
+html[data-theme="dark"] .ring-gray-100,
+html[data-theme="dark"] .divide-gray-100 > :not(:last-child),
+html[data-theme="dark"] .divide-gray-200 > :not(:last-child) { border-color: var(--line); --tw-ring-color: var(--line); }
+html[data-theme="dark"] .bg-teal-50,
+html[data-theme="dark"] [class*="bg-teal-50/"],
+html[data-theme="dark"] .bg-teal-100,
+html[data-theme="dark"] .bg-orange-50,
+html[data-theme="dark"] [class*="bg-orange-50/"],
+html[data-theme="dark"] .bg-orange-100 { background-color: #42281a; }
+html[data-theme="dark"] [class*="from-orange-50"][class*="bg-gradient"],
+html[data-theme="dark"] [class*="from-teal-50"][class*="bg-gradient"],
+html[data-theme="dark"] [class*="from-gray-100"][class*="bg-gradient"] {
+  background-image: linear-gradient(135deg, #3a281c, #27211b);
+}
+html[data-theme="dark"] .text-teal-700,
+html[data-theme="dark"] .text-teal-600,
+html[data-theme="dark"] .text-orange-700,
+html[data-theme="dark"] .text-orange-800,
+html[data-theme="dark"] .text-orange-900 { color: #ffac71; }
+html[data-theme="dark"] .bg-blue-50,
+html[data-theme="dark"] .bg-purple-50,
+html[data-theme="dark"] .bg-green-50,
+html[data-theme="dark"] .bg-emerald-50,
+html[data-theme="dark"] .bg-red-50,
+html[data-theme="dark"] .bg-amber-50,
+html[data-theme="dark"] [class*="bg-blue-50/"],
+html[data-theme="dark"] [class*="bg-purple-50/"] { background-color: var(--surface-soft); }
+html[data-theme="dark"] .text-blue-700,
+html[data-theme="dark"] .text-purple-700,
+html[data-theme="dark"] .text-green-700,
+html[data-theme="dark"] .text-emerald-700 { color: #d9bca4; }
+html[data-theme="dark"] .text-red-700,
+html[data-theme="dark"] .text-amber-700 { color: #ffad80; }
+html[data-theme="dark"] .home-shell {
+  background: radial-gradient(ellipse 48% 35% at 83% 8%, rgb(186 72 18 / .24), transparent 90%),
+              linear-gradient(145deg, #141210, #1b1713 62%, #211710);
+}
+html[data-theme="dark"] .home-shell::before {
+  background-image: linear-gradient(rgb(255 255 255 / .025) 1px, transparent 1px),
+                    linear-gradient(90deg, rgb(255 255 255 / .025) 1px, transparent 1px);
+}
+html[data-theme="dark"] .home-mark { background: #ea681d; border-color: #ea681d; box-shadow: 7px 7px 0 #4b2b1a, 0 16px 32px rgb(0 0 0 / .3); }
+html[data-theme="dark"] .home-mark::after { background: #191714; }
+html[data-theme="dark"] .portal-choice:hover { background: #33271f; }
+html[data-theme="dark"] :is(input, select, textarea) {
+  background-color: var(--surface); color: var(--ink); border-color: var(--line);
+}
+html[data-theme="dark"] :is(input, textarea)::placeholder { color: #a89b8e; }
+html[data-theme="dark"] .text-white { color: #fff; }
+html[data-theme="dark"] .theme-toggle { color: var(--ink); }
+
+@media (max-width: 640px) {
+  .home-shell { padding-top: 6rem; padding-bottom: 3rem; }
+  .home-panel { border-radius: 20px; }
+  .portal-choice { min-height: 145px; padding: 1.25rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
