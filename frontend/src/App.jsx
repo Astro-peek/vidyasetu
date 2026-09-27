@@ -68,7 +68,7 @@ const AppRoutes = () => {
 function App() {
   return (
     <AppProvider>
-     <BrowserRouter basename="/vidyasetu">
+     <BrowserRouter>
         <AppRoutes />
         <AIAssistant />
       </BrowserRouter>
