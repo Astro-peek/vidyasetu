@@ -48,10 +48,10 @@ export default function Home() {
           <div className="vs-role-login" ref={loginRef}><button className="vs-signin" aria-haspopup="menu" aria-expanded={loginOpen} onClick={() => setLoginOpen(value => !value)}>Login by role <ChevronDown size={16}/></button>
             {loginOpen && <div className="vs-role-menu" role="menu" aria-label="Choose demo login role">
               <button role="menuitem" onClick={() => login('/applicant/dashboard','applicant')}>ST student / Applicant</button>
-              <button role="menuitem" onClick={() => login('/admin/dashboard','admin')}>Scheme admin</button>
-              <button role="menuitem" onClick={() => login('/scrutiny','officer')}>Scrutiny officer</button>
-              <button role="menuitem" onClick={() => login('/committee','committee')}>Committee</button>
-              <button role="menuitem" onClick={() => login('/admin/dashboard','ministry')}>Ministry viewer</button>
+              <button role="menuitem" onClick={() => login('/admin/dashboard','scheme_admin')}>Scheme admin</button>
+              <button role="menuitem" onClick={() => login('/scrutiny','scrutiny_officer')}>Scrutiny officer</button>
+              <button role="menuitem" onClick={() => login('/committee','committee_member')}>Committee</button>
+              <button role="menuitem" onClick={() => login('/admin/dashboard','ministry_viewer')}>Ministry viewer</button>
               <small>Choose a role to enter the demo.</small>
             </div>}</div>
           <button className="vs-button vs-button-primary" onClick={() => go('/applicant/dashboard')}>Get started</button>
@@ -64,10 +64,10 @@ export default function Home() {
         <button onClick={() => go('/applications')}>Track Application</button>
         <span className="vs-mobile-role-heading">Login by role</span>
         <button onClick={() => login('/applicant/dashboard','applicant')}>ST student / Applicant</button>
-        <button onClick={() => login('/admin/dashboard','admin')}>Scheme admin</button>
-        <button onClick={() => login('/scrutiny','officer')}>Scrutiny officer</button>
-        <button onClick={() => login('/committee','committee')}>Committee</button>
-        <button onClick={() => login('/admin/dashboard','ministry')}>Ministry viewer</button>
+        <button onClick={() => login('/admin/dashboard','scheme_admin')}>Scheme admin</button>
+        <button onClick={() => login('/scrutiny','scrutiny_officer')}>Scrutiny officer</button>
+        <button onClick={() => login('/committee','committee_member')}>Committee</button>
+        <button onClick={() => login('/admin/dashboard','ministry_viewer')}>Ministry viewer</button>
         <button onClick={() => go('/applicant/dashboard')}>Get started</button>
         <ThemeToggle />
       </nav>}
