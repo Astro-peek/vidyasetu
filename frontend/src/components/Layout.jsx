@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Bell, ChevronDown, ClipboardList, FileSearch, Home, HelpCircle, LayoutDashboard, LogOut, Menu, Settings, UserRound, Users, X } from 'lucide-react';
+import { Bell, ChevronDown, ClipboardList, FileSearch, Home, HelpCircle, LayoutDashboard, LogOut, Menu, Settings, Sparkles, UserRound, Users, X } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import Brand from './Brand';
 import ThemeToggle from './ThemeToggle';
@@ -12,14 +12,14 @@ const applicantNav = [
   { label: 'Help', hi: 'मदद', href: '/help', icon: HelpCircle },
 ];
 const staffNav = {
-  admin: [{ label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard }, { label: 'Schemes', href: '/admin/schemes', icon: ClipboardList }],
-  ministry: [{ label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard }],
-  officer: [{ label: 'Scrutiny Queue', href: '/scrutiny', icon: FileSearch }],
-  committee: [{ label: 'Selection Workspace', href: '/committee', icon: Users }],
+  scheme_admin:     [{ label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard }, { label: 'Schemes', href: '/admin/schemes', icon: ClipboardList }],
+  ministry_viewer:  [{ label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard }],
+  scrutiny_officer: [{ label: 'Scrutiny Queue', href: '/scrutiny', icon: FileSearch }],
+  committee_member: [{ label: 'Selection Workspace', href: '/committee', icon: Users }],
 };
 
 export default function Layout() {
-  const { role, setRole, lang, setLang, t, studentProfile, studentApplications } = useAppContext();
+  const { role, setRole, lang, setLang, t, studentProfile, studentApplications, openAssistant } = useAppContext();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -33,8 +33,9 @@ export default function Layout() {
   return <div className="vs-app-shell">
     <header className="vs-app-header">
       <Brand />
-      {isApplicant && <nav className="vs-app-topnav" aria-label="Student navigation">{applicantNav.map(item => <NavLink key={item.href} to={item.href} className={({ isActive }) => isActive ? 'active' : ''}>{t(item.label,item.hi)}</NavLink>)}</nav>}
+      <nav className="vs-app-topnav" aria-label={isApplicant?'Student navigation':'Staff navigation'}>{nav.map(item => <NavLink key={item.href} to={item.href} className={({ isActive }) => isActive ? 'active' : ''}>{t(item.label,item.hi)}</NavLink>)}</nav>
       <div className="vs-app-tools">
+        <button className="vs-app-ai-shortcut" onClick={() => openAssistant('chat')}><Sparkles size={17}/> SetuAI</button>
         <ThemeToggle className="vs-header-theme" />
         {isApplicant && <div className="vs-language" aria-label="Language"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><span aria-hidden="true">|</span><button className={lang==='hi'?'active':''} onClick={()=>setLang('hi')}>हिन्दी</button></div>}
         <div className="vs-tool-wrap"><button className="vs-icon-button" aria-label="Notifications" aria-expanded={notificationsOpen} onClick={() => { setNotificationsOpen(!notificationsOpen); setAccountOpen(false); }}><Bell size={20}/>{lastApp && <span className="vs-notification-dot"/>}</button>
